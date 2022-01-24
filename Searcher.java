@@ -172,10 +172,10 @@ public class Searcher {
             System.out.println("Number of Hits: " + topDocsList.size());
             for (ScoreDoc scoreDoc : topDocsList) {
                 Document document = indexSearcher.doc(scoreDoc.doc);
-                System.out.println("item_id: " + document.get("item_id") + ", "
-                        + document.get("concatColumns").substring(0, 64) + ", score: " + scoreDoc.score + ", distance: "
-                        + CheckDistance(ItemCoordinate(document.get("item_id")), new Coordinate(longitude, latitude)) +
-                        ", price: " + ItemPrice(document.get("item_id")));
+                System.out.printf(Locale.US, "item_id: %s, %s, score: %.9f, distance: %f, price: %s %n", document.get("item_id"),
+                        ItemTitle(document.get("item_id")), scoreDoc.score,
+                        CheckDistance(ItemCoordinate(document.get("item_id")), new Coordinate(longitude, latitude)),
+                        ItemPrice(document.get("item_id")));
             }
 
 
@@ -198,6 +198,28 @@ public class Searcher {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 result = String.valueOf(rs.getDouble("current_price"));
+            }
+            rs.close();
+            conn.close();
+            return result;
+        } catch (SQLException ex) {
+            System.out.println(ex);
+        }
+        return null;
+    }
+
+    private static String ItemTitle(String item_id) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        String result = null;
+        try {
+            conn = DbManager.getConnection(true);
+            String sql = "select item_name from item where item_id = ? ;";
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, item_id);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                result = String.valueOf(rs.getString("item_name"));
             }
             rs.close();
             conn.close();
