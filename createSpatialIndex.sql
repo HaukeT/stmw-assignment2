@@ -4,14 +4,12 @@ create table if not exists geocoordinates_itemID
 (
     itemID        int not null,
     geocoordinate point not null,
-    constraint geocoordinates_itemID_pk primary key (itemID)
+    constraint geocoordinates_itemID_pk primary key (itemID), spatial index(geocoordinate)
 ) ENGINE = MyISAM;
 
 insert into geocoordinates_itemID (itemID, geocoordinate)
 select i.item_id, Point(i.latitude, i.longitude)
 from item_coordinates i;
-
-create spatial index geocoordinate_index on geocoordinates_itemID (geocoordinate);
 
 CREATE FUNCTION
     get_distance_in_miles_between_geo_locations(
