@@ -1,3 +1,5 @@
+use ad;
+
 create table if not exists geocoordinates_itemID
 (
     itemID        int not null,
