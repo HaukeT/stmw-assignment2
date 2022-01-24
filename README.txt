@@ -1,0 +1,1 @@
+Indexing takes 10 minutes in the VM despite plentiful allocated resources. On my machine it takes only seconds to index.

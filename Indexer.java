@@ -51,10 +51,12 @@ public class Indexer {
             PreparedStatement stmt = null;
             try {
                 conn = DbManager.getConnection(true);
-                String sql = "select i.item_id, item_name, item_group_categories, i.description from item i " +
-                        "left join (select item_id, group_concat(category_name separator ' ')" +
-                        " as item_group_categories from has_category group by item_id) id_categories" +
-                        " on id_categories.item_id = i.item_id;";
+                String sql = "select i.item_id, item_name, item_group_categories, i.description " +
+                        "from (select item_id, group_concat(category_name separator ' ') as item_group_categories " +
+                        "      from has_category " +
+                        "      group by item_id) id_categories " +
+                        "         left join item i " +
+                        "                   on id_categories.item_id = i.item_id;";
                 stmt = conn.prepareStatement(sql);
                 //String sql = "SELECT * from item limit 3;";
                 ResultSet rs = stmt.executeQuery();
