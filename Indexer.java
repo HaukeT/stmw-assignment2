@@ -9,56 +9,70 @@ import org.apache.lucene.store.FSDirectory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Indexer {
-    public Indexer() {}
+    public Indexer() {
+    }
+
     public static IndexWriter indexWriter;
+
     public static void main(String args[]) {
-	String usage = "java Indexer";
-	rebuildIndexes("indexes");
+        String usage = "java Indexer";
+        rebuildIndexes("indexes");
     }
-    public static void insertDoc(IndexWriter i, String doc_id, String line){
-	Document doc = new Document();
-	doc.add(new TextField("doc_id", doc_id, Field.Store.YES));
-	doc.add(new TextField("line", line,Field.Store.YES));
-	try { i.addDocument(doc); } catch (Exception e) { e.printStackTrace(); }
+
+    public static void insertDoc(IndexWriter i, String item_id, String concatColumns) {
+        Document doc = new Document();
+        doc.add(new TextField("item_id", item_id, Field.Store.YES));
+        doc.add(new TextField("concatColumns", concatColumns, Field.Store.YES));
+
+        try {
+            i.addDocument(doc);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
     public static void rebuildIndexes(String indexPath) {
-	try {
-	    Path path = Paths.get(indexPath);
-	    System.out.println("Indexing to directory '" + indexPath + "'...\n");
-	    Directory directory = FSDirectory.open(path);
-	    IndexWriterConfig config = new IndexWriterConfig(new SimpleAnalyzer());
-	    //	    IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
-	    //IndexWriterConfig config = new IndexWriterConfig(new EnglishAnalyzer());
-	    IndexWriter i = new IndexWriter(directory, config);
-	    i.deleteAll();
-	    insertDoc(i, "1", "The old night keeper keeps the keep in the town");
-	    insertDoc(i, "2", "In the big old house in the big old gown.");
-	    insertDoc(i, "3", "The house in the town had the big old keep");
-	    insertDoc(i, "4", "Where the old night keeper never did sleep.");
-	    insertDoc(i, "5", "The night keeper keeps the keep in the night");
-	    insertDoc(i, "6", "And keeps in the dark and sleeps in the light.");
-	    insertDoc(i, "7", "The house is the house.");
-	    insertDoc(i, "8", "The-the");
-	    insertDoc(i, "9", "the-the.");
-	    insertDoc(i, "10", "the");
-	    insertDoc(i, "11", "the the");
-	    insertDoc(i, "12", "the the the");
-	    insertDoc(i, "13", "the the the the");
-	    //	    insertDoc(i, "3", "the-the-the.");
-	    //	    insertDoc(i, "4", "the-thethe__the.");
-	    //	    insertDoc(i, "5", "The__the");
-	    //	    insertDoc(i, "6", "The-the");
-	    //	    insertDoc(i, "14", "The a b c");
-	    //	    insertDoc(i, "15", "The a b.");
-	    //	    insertDoc(i, "16", "The a.");
-	    //	    insertDoc(i, "17", "The the the the.");
-	    //	    insertDoc(i, "18", "The the the the the the the the the.");
-	    i.close();
-	    directory.close();
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
+        try {
+            Path path = Paths.get(indexPath);
+            System.out.println("Indexing to directory '" + indexPath + "'...\n");
+            Directory directory = FSDirectory.open(path);
+            IndexWriterConfig config = new IndexWriterConfig(new SimpleAnalyzer());
+            //	    IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
+            //IndexWriterConfig config = new IndexWriterConfig(new EnglishAnalyzer());
+            IndexWriter i = new IndexWriter(directory, config);
+            i.deleteAll();
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            try {
+                conn = DbManager.getConnection(true);
+                String sql = "select i.item_id, item_name, item_group_categories, i.description from item i " +
+                        "left join (select item_id, group_concat(category_name separator ' ')" +
+                        " as item_group_categories from has_category group by item_id) id_categories" +
+                        " on id_categories.item_id = i.item_id;";
+                stmt = conn.prepareStatement(sql);
+                //String sql = "SELECT * from item limit 3;";
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    insertDoc(i, rs.getString("item_id"),
+                            rs.getString("item_name") + " " +
+                                    rs.getString("item_group_categories") + " " +
+                                    rs.getString("description"));
+                }
+                rs.close();
+                conn.close();
+            } catch (SQLException ex) {
+                System.out.println(ex);
+            }
+            i.close();
+            directory.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

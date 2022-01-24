@@ -12,7 +12,6 @@ public class DbManager {
 	
 	/**
 	 * Opens a database connection
-	 * @param dbName The database name
 	 * @param readOnly True if the connection should be opened read-only
 	 * @return An open java.sql.Connection
 	 * @throws SQLException
